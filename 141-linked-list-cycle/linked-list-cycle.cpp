@@ -12,7 +12,7 @@ public:
        ListNode* temp = head;
 
         // Create a map to keep track of visited nodes
-        unordered_map<ListNode*, int> nodeMap;
+        set<ListNode*> nodeMap;
 
         // Traverse the linked list
         while (temp != nullptr) {
@@ -21,7 +21,7 @@ public:
                 return true;
             }
             // Store the current node in the map
-            nodeMap[temp] = 1;
+            nodeMap.insert(temp);
 
             // Move to the next node
             temp = temp->next;
