@@ -6,4 +6,6 @@ public:
         }
         return (s + s).find(goal) != string::npos;
     }
+//     string::npos is a special constant in C++ that means:
+//                                                   “NOT FOUND”
 };
