@@ -7,11 +7,10 @@ public:
         };
         
         int result = 0;
-        for (int i = 0; i < s.size(); ++i) {
-            int curr = roman[s[i]];
-            int next = (i+1 < s.size()) ? roman[s[i+1]] : 0;
-            
-            if (curr < next) {
+        for (int i = 0; i < s.size(); i++) {
+            int curr=roman[s[i]];
+            int next=(i+1 < s.size())?roman[s[i+1]]:0;
+            if (curr < next){
                 result -= curr;
             } else {
                 result += curr;
