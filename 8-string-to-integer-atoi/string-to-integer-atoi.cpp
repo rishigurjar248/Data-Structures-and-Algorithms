@@ -15,8 +15,7 @@ public:
 
         while (i < s.size() && isdigit(s[i])) {
             res = res * 10 + (s[i] - '0');
-
-            // Handle overflow
+ 
             if (sign * res > INT_MAX) return INT_MAX;
             if (sign * res < INT_MIN) return INT_MIN;
             i++;
