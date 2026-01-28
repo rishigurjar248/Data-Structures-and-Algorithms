@@ -1,90 +1,81 @@
+const int M=1e4+1, NN=6400;
+const int INF=1e9+7;
+
+// Using an array version for linked list to replace x_pos[M]
+static int xList[M], nxt[NN];
+
+static unsigned dp[2][NN]; 
+static unsigned suffixMin[M]; 
+
 class Solution {
 public:
-    int minCost(vector<vector<int>>& grid, int k) {
-        int m = grid.size();
-        int n = grid[0].size();
-        const int INF = 1e9;
-        const int MAX_VAL = 10000;
+    static inline int idx(int i, int j, int c) { return i*c+j; }
 
-        // Group coordinates by grid value
-        vector<vector<pair<int, int>>> val_to_coords(MAX_VAL + 1);
-        for (int i = 0; i < m; ++i) {
-            for (int j = 0; j < n; ++j) {
-                val_to_coords[grid[i][j]].push_back({i, j});
+    static int minCost(vector<vector<int>>& grid, int k) {
+        const int r=grid.size(), c=grid[0].size(), N=r*c;
+
+        if (xList[0]!=-1) // fill all with -1 at 1st times
+            memset(xList, -1, sizeof(xList));
+
+        int xMax=0;
+        // Group indices by values of grid
+        for (int i=0; i<r; i++) {
+            for (int j=0; j<c; j++) {
+                const int x=grid[i][j], p=idx(i, j, c);
+                nxt[p]=xList[x];// insert node at 1st place
+                xList[x]=p;
+                if (x>xMax) xMax=x;
             }
         }
 
-        // dist[t][r][c]: min cost to reach (r, c) using exactly t teleports
-        vector<vector<vector<int>>> dist(
-            k + 1, vector<vector<int>>(m, vector<int>(n, INF))
-        );
+        //Initialize DP for 0th row
+        fill(dp[0], dp[0]+N, INF);
 
-        dist[0][0][0] = 0;
-
-        for (int t = 0; t <= k; ++t) {
-            // Dijkstra for standard moves at teleport level t
-            priority_queue<pair<int, int>, vector<pair<int, int>>, greater<>> pq;
-            for (int i = 0; i < m; ++i) {
-                for (int j = 0; j < n; ++j) {
-                    if (dist[t][i][j] != INF) {
-                        pq.push({dist[t][i][j], i * n + j});
-                    }
-                }
-            }
-
-            while (!pq.empty()) {
-                auto [d, pos] = pq.top();
-                pq.pop();
-
-                int r = pos / n;
-                int c = pos % n;
-                if (d > dist[t][r][c]) continue;
-
-                int dr[2] = {0, 1};
-                int dc[2] = {1, 0};
-
-                for (int i = 0; i < 2; ++i) {
-                    int nr = r + dr[i];
-                    int nc = c + dc[i];
-                    if (nr < m && nc < n) {
-                        if (dist[t][nr][nc] > d + grid[nr][nc]) {
-                            dist[t][nr][nc] = d + grid[nr][nc];
-                            pq.push({dist[t][nr][nc], nr * n + nc});
-                        }
-                    }
-                }
-            }
-
-            // Teleportation to next layer
-            if (t < k) {
-                vector<int> min_cost_at_val(MAX_VAL + 1, INF);
-                for (int i = 0; i < m; ++i) {
-                    for (int j = 0; j < n; ++j) {
-                        min_cost_at_val[grid[i][j]] =
-                            min(min_cost_at_val[grid[i][j]], dist[t][i][j]);
-                    }
-                }
-
-                vector<int> suffix_min(MAX_VAL + 2, INF);
-                for (int v = MAX_VAL; v >= 0; --v) {
-                    suffix_min[v] = min(suffix_min[v + 1], min_cost_at_val[v]);
-                }
-
-                for (int v = 0; v <= MAX_VAL; ++v) {
-                    if (suffix_min[v] == INF) continue;
-                    for (auto& [r, c] : val_to_coords[v]) {
-                        dist[t + 1][r][c] =
-                            min(dist[t + 1][r][c], suffix_min[v]);
-                    }
-                }
+        dp[0][0]=0;
+        for (int i=0; i<r; i++) {
+            for (int j=0; j<c; j++) {
+                int pos=idx(i, j, c);
+                if (i>0) 
+                    dp[0][pos]=min(dp[0][pos], dp[0][pos-c]+grid[i][j]);
+                if (j>0) 
+                    dp[0][pos]=min(dp[0][pos], dp[0][pos-1]+grid[i][j]);
             }
         }
 
-        int ans = INF;
-        for (int t = 0; t <= k; ++t) {
-            ans = min(ans, dist[t][m - 1][n - 1]);
-        }
+        // DP with t Teleports
+        for (int t=1; t<= k;t++) {
+            // &1 trick used here
+            const bool curr=t&1, prev=(t-1)&1;
 
-        return ans >= INF ? -1 : ans;
+            // Compute suffixMin[x] 
+            unsigned currMin=INF;
+            for (int x=xMax; x>=0; x--) {
+                // trasverse the linked list 
+                for (int e=xList[x]; e!=-1; e=nxt[e]) {
+                    currMin=min(currMin, dp[prev][e]);
+                }
+                suffixMin[x]=currMin;// teleport
+            }
+
+            // Update cells for current teleport 
+            for (int i=0; i<r; i++) {
+                for (int j = 0; j < c; j++) {
+                    const int pos=idx(i, j, c);
+                    const int x=grid[i][j];
+
+                    // best result with fewer teleports or by teleport
+                    unsigned best=min(dp[prev][pos], suffixMin[x]);
+
+                    // step from up or Left
+                    if (i>0) best=min(best, dp[curr][pos-c]+x);
+                    if (j>0) best=min(best, dp[curr][pos-1]+x);
+
+                    dp[curr][pos]=best;
+                }
+            }
+        }
+        // Reset for the next test case
+        memset(xList, -1, sizeof(int)*(xMax+1));
+        return dp[k&1][N-1];
     }
 };
