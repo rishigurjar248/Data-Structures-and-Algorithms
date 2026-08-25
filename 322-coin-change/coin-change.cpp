@@ -19,7 +19,7 @@ public:
             
         }
         
-        if(mic[amount]>=INT_MAX)return -1;
+        if(mic[amount]==INT_MAX)return -1;
         
         
         return mic[amount];
